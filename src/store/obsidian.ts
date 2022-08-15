@@ -120,7 +120,7 @@ export const useObsidianStore = (plugin?: EspansoPlugin) => {
 
 	if (!plugin) {
 		log.error("Init Failed")
-		return
+		return store
 	}
 
 	store = new ObsidianStore(plugin);

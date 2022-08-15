@@ -6,7 +6,7 @@ import {
 import * as yaml from "yaml";
 import { wrapCodeBlock } from "./utils/string";
 import { extname, resolve } from "./utils/path";
-import { readFileSync } from "./utils/file";
+import { readFileSync, selectFileSync } from "./utils/file";
 import { SettingPlugin } from "./setting.class";
 
 export default class  extends SettingPlugin {
@@ -53,7 +53,7 @@ export default class  extends SettingPlugin {
     const language =
       codeSetting?.language || codeSetting?.lang || extname(path);
     const filePath = resolve(path, sourcePath);
-    const code = await readFileSync(filePath);
+    const code = await selectFileSync(filePath, codeSetting.start, codeSetting.end);
 
     MarkdownRenderer.renderMarkdown(
       wrapCodeBlock(language, code),

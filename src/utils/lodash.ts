@@ -22,3 +22,19 @@ export function debounce(fn: Function, ms = 0) {
     timeoutId = setTimeout(() => fn.apply(this, args), ms);
   };
 }
+
+export function isObject(o: any) {
+	return Object.prototype.toString.call(o) === "[object Object]"
+}
+
+export function isString(o: any): o is string {
+	return Object.prototype.toString.call(o) === "[object String]"
+}
+
+export function isNumber(o: any): o is number {
+	return Object.prototype.toString.call(o) === "[object Number]"
+}
+
+export function isRegExp(o: any): o is RegExp {
+	return Object.prototype.toString.call(o) === "[object RegExp]"
+}

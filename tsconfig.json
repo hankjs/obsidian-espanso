@@ -13,6 +13,7 @@
         "moduleResolution": "node",
         "importHelpers": true,
         "isolatedModules": true,
+        "composite": true,
         "lib": [
             "DOM",
             "ES5",
@@ -25,8 +26,8 @@
         ]
     },
     "include": [
-        "**/*.ts",
-        "**/*.vue",
+        "src/**/*.ts",
+		"@types/*.d.ts"
     ],
     "exclude": [
         "node_modules",
