@@ -4,7 +4,7 @@ export const DEFAULT_SETTINGS: Settings = {
   appName: "Espanso Snippet",
 
   espansoTags: ["#snippets"],
-  espansoConfigPath: "",
+  espansoConfigPath: undefined as any,
 
   labelStart: "# Overview",
   labelEnd: "(```preview)|(---)|(\\s#)",
