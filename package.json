@@ -1,12 +1,12 @@
 {
 	"name": "obsidian-espanso-plugin",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "This is a Espanso plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-        "test": "jest",
+		"test": "jest",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],
@@ -29,7 +29,6 @@
 	},
 	"dependencies": {
 		"immutability-helper": "^3.1.1",
-		"microdiff": "^1.3.0",
-		"yaml": "^2.1.1"
+		"microdiff": "^1.3.0"
 	}
 }
