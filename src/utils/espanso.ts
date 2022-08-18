@@ -1,7 +1,6 @@
 import { writeFileSync } from "fs";
 import diff from "microdiff";
-import * as yaml from "yaml";
-import { Notice } from "obsidian";
+import { Notice, parseYaml, stringifyYaml } from "obsidian";
 
 import { Page } from "src/obsidian_vue.type";
 import { readFileSync } from "./file";
@@ -55,7 +54,7 @@ export const generateConfigFile = debounce(async () => {
   }
 
   // Local old config
-  const oldConfig = yaml.parse(await readConfigFile());
+  const oldConfig = parseYaml(await readConfigFile());
 
   // New config
   const store = useObsidianStore();
@@ -69,13 +68,13 @@ export const generateConfigFile = debounce(async () => {
     matches2Obj(matches)
   );
 
-  log.table(changes);
-
-  if (changes == null) {
+  if (!changes || changes == null) {
     return;
   }
 
-  const config = yaml.stringify({
+  log.table(changes);
+
+  const config = stringifyYaml({
     matches,
   });
 

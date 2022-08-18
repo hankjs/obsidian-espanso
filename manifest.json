@@ -2,7 +2,7 @@
 	"id": "obsidian-espanso-plugin",
 	"name": "Espanso Snippet",
 	"version": "1.1.0",
-	"minAppVersion": "0.12.0",
+	"minAppVersion": "0.15.0",
 	"description": "Espanso Snippet",
 	"author": "Hank",
 	"authorUrl": "https://github.com/zjhcn",

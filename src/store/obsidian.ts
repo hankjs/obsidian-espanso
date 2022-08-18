@@ -1,5 +1,4 @@
-import { App, getAllTags, TAbstractFile, TFile } from "obsidian";
-import * as yaml from "yaml";
+import { App, getAllTags, parseYaml, TAbstractFile, TFile } from "obsidian";
 import * as path from "path";
 
 import { Page, EspansoPlugin } from "src/obsidian_vue.type";
@@ -98,7 +97,7 @@ class ObsidianStore {
 
 		// get espanso code yaml
 		const src = previewBlocks[0].replace(/(```preview)|(```)/g, "");
-		const yamlConfig = yaml.parse(src);
+		const yamlConfig = parseYaml(src);
 
 		// init page snippet property
 		page.snippetLabel = label;

@@ -2,8 +2,8 @@ import {
   Component,
   MarkdownPostProcessorContext,
   MarkdownRenderer,
+  parseYaml,
 } from "obsidian";
-import * as yaml from "yaml";
 import { wrapCodeBlock } from "./utils/string";
 import { extname, resolve } from "./utils/path";
 import { readFileSync, selectFileSync } from "./utils/file";
@@ -48,7 +48,7 @@ export default class  extends SettingPlugin {
     component: Component | MarkdownPostProcessorContext,
     sourcePath: string
   ) {
-    const codeSetting = yaml.parse(source);
+    const codeSetting = parseYaml(source);
     const path = codeSetting?.path;
     const language =
       codeSetting?.language || codeSetting?.lang || extname(path);
