@@ -68,7 +68,7 @@ export const generateConfigFile = debounce(async () => {
     matches2Obj(matches)
   );
 
-  if (!changes || changes == null) {
+  if (!changes || changes == null || changes.length === 0) {
     return;
   }
 

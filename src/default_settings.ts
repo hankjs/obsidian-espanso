@@ -1,8 +1,8 @@
 import { Settings } from "./obsidian_vue.type";
 
-export const DEFAULT_SETTINGS: Settings = {
-  appName: "Espanso Snippet",
+export const APP_NAME =  "Espanso Snippet"
 
+export const DEFAULT_SETTINGS: Settings = {
   espansoTags: ["#snippets"],
   espansoConfigPath: undefined as any,
 

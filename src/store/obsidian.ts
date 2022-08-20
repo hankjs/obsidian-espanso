@@ -1,12 +1,18 @@
-import { App, getAllTags, parseYaml, TAbstractFile, TFile } from "obsidian";
+import { App, fuzzySearch, getAllTags, parseYaml, prepareFuzzySearch, TAbstractFile, TFile } from "obsidian";
 import * as path from "path";
 
-import { Page, EspansoPlugin } from "src/obsidian_vue.type";
+import { Page, EspansoPlugin, YamlConfig } from "src/obsidian_vue.type";
 import { cachedRead } from "src/utils/vault";
-import { resolve } from "src/utils/path";
+import { resolve, resolveObsidianPath } from "src/utils/path";
 import { generateConfigFile } from "src/utils/espanso";
 import { useSettingStore } from ".";
 import log from "src/utils/log";
+import { APP_NAME } from "src/default_settings";
+import { parsePreviewYaml, trimPreviewWrap, wrapLinkAnnotation } from "src/utils/string";
+import { write } from "src/utils/file";
+import { fileToLinktext, getPathByMarkdownLink } from "src/utils/metadataCache";
+
+const searchPreviewAnnotation = prepareFuzzySearch("%%preview %%");
 
 export interface ObsidianState {
 	app: App;
@@ -20,6 +26,7 @@ class ObsidianStore {
 	plugin: EspansoPlugin = null as any;
 	vaultBasePath: string = null as any;
 	pageMap: Map<string, Page> = new Map();
+	resolveCount = 0;
 
 	constructor(plugin: EspansoPlugin) {
 		this.init(plugin);
@@ -41,6 +48,12 @@ class ObsidianStore {
 		);
 
 		plugin.registerEvent(
+			this.app.metadataCache.on("resolved", () =>
+				this.generateEspansoConfigFile(Object.keys(this.app.metadataCache.resolvedLinks).length)
+			)
+		);
+
+		plugin.registerEvent(
 			this.app.vault.on("delete", (file: TAbstractFile) =>
 				this.onVaultDelete(file)
 			)
@@ -58,6 +71,7 @@ class ObsidianStore {
 			return;
 		}
 		this.pageMap.delete(file.path);
+		this.resolveCount--;
 		generateConfigFile();
 	}
 
@@ -72,42 +86,108 @@ class ObsidianStore {
 	async onMetadataCacheResolve(file: TFile) {
 		const { settings } = useSettingStore();
 		const page = await cachedRead(file);
+		const { configList, label } = parsePreviewYaml(page.contents, page.path);
+		await this.generatePreviewLinks(page, configList);
+
+		// check tags need espanso
 		const tags = getAllTags(page.metadata);
 		if (!tags?.some((tag) => settings.espansoTags.includes(tag))) {
+			this.addCache(page);
 			return;
 		}
 
-		const previewBlocks = page.contents.match(/```preview(.|\s)*?```/);
-		if (previewBlocks == null) {
+		const [firstConfig] = configList;
+		if (!firstConfig) {
+			this.addCache(page);
 			return;
 		}
-
-		// get espanso label
-		const labelWrapReg = new RegExp(
-			`${settings.labelStart}(.|\\s)*?(${settings.labelEnd})`
-		);
-		const labelWrapClearReg = new RegExp(
-			`(${settings.labelStart})|${settings.labelEnd}`,
-			"g"
-		);
-		const labelWrap = page.contents.match(labelWrapReg);
-		const label = labelWrap
-			? labelWrap[0].replace(labelWrapClearReg, "").trim()
-			: path.parse(page.path).name;
-
-		// get espanso code yaml
-		const src = previewBlocks[0].replace(/(```preview)|(```)/g, "");
-		const yamlConfig = parseYaml(src);
 
 		// init page snippet property
 		page.snippetLabel = label;
-		page.snippetPath = resolve(yamlConfig.path, page.path);
-		page.snippetTrigger = yamlConfig.trigger;
+		page.snippetTrigger = firstConfig.trigger;
+		page.snippetPath = resolve(firstConfig.path || firstConfig.link, page.path);
+
 
 		this.pageMap.set(page.path, page);
+		this.addCache(page);
+	}
 
+	addCache(page: Page) {
+		if (this.pageMap.has(page.path)) {
+			return;
+		}
+
+		this.resolveCount++;
+	}
+
+	generateEspansoConfigFile(resolveLength: number) {
+		if (resolveLength !== this.resolveCount) {
+			window.requestAnimationFrame(() => this.generateEspansoConfigFile(resolveLength));
+			return;
+		}
+
+		console.log(`Obsidian ${APP_NAME} loaded`);
 		generateConfigFile();
 	}
+
+	searchPreviewAnnotations(contents: string) {
+		const result = searchPreviewAnnotation(contents);
+		let links: string[] = [];
+		if (result == null) {
+			return { links };
+		}
+
+		const { matches } = result;
+		const [[annotationStart, linksStart], [linksEnd, annotationEnd]] = matches;
+		if (linksStart == null || linksEnd == null) {
+			return { links };
+		}
+
+		const mdLinks = contents.slice(linksStart, linksEnd).match(/\[\[([^\[\]]*)\]\]/g)
+		links = mdLinks?.map(md => md.replace(/\[\[([^\[\]]*)\]\]/, "$1")) as string[]
+
+		return {
+			annotationStart,
+			annotationEnd,
+			linksStart,
+			linksEnd,
+			links
+		};
+	}
+
+	async generatePreviewLinks(page: Page, configList: YamlConfig[]) {
+		const { contents } = page;
+
+		if (!configList || configList.length === 0) {
+			return;
+		}
+
+		const linkConfigList = configList.filter(config => Reflect.has(config, "link"));
+
+		if (linkConfigList.length === 0) {
+			return;
+		}
+
+		const codeBlockLinks = linkConfigList.map(config => resolveObsidianPath(config.link as string, page.path));
+		let { links, annotationStart, annotationEnd } = this.searchPreviewAnnotations(contents);
+		const codeBlockLinksSet = new Set([...codeBlockLinks])
+		const concatSet = new Set([...links, ...codeBlockLinksSet]);
+
+		if (links.length === concatSet.size && links.length === codeBlockLinksSet.size) {
+			return;
+		}
+
+		const linkAnnotation = wrapLinkAnnotation(
+			[...codeBlockLinksSet].map(getPathByMarkdownLink)
+				.map((link) => fileToLinktext(link, page.path))
+				.join('')
+		);
+
+		const addLinksContents = annotationStart == null ? `${contents}\n${linkAnnotation}` :
+			`${contents.slice(0, annotationStart)}${linkAnnotation}${contents.slice(annotationEnd)}`;
+		await write(page.path, addLinksContents)
+	} // end generatePreviewLinks
+
 }
 
 let store: ObsidianStore = null as any;
@@ -118,8 +198,8 @@ export const useObsidianStore = (plugin?: EspansoPlugin) => {
 	}
 
 	if (!plugin) {
-		log.error("Init Failed")
-		return store
+		log.error("Init Failed");
+		return store;
 	}
 
 	store = new ObsidianStore(plugin);

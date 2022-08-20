@@ -1,6 +1,6 @@
 import update, { Spec } from "immutability-helper";
 import { App, Setting } from "obsidian";
-import { DEFAULT_SETTINGS } from "src/default_settings";
+import { APP_NAME, DEFAULT_SETTINGS } from "src/default_settings";
 import { EspansoPlugin, Settings } from "src/obsidian_vue.type";
 import { SettingsManagerConfig } from "./Setting";
 
@@ -43,7 +43,7 @@ export class SettingsManager {
     containerEl.empty();
 
     containerEl.createEl("h2", {
-      text: `Settings for ${DEFAULT_SETTINGS.appName} plugin.`,
+      text: `Settings for ${APP_NAME} plugin.`,
     });
 
     this.uiEspansoSettings(containerEl);
